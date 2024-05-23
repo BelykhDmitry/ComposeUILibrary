@@ -3,6 +3,7 @@ package com.dmitryb.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.LayoutScopeMarker
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,6 +14,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,83 +38,116 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+/**
+ * A layout composable with [content] and [badge].
+ * [badge] position is right bottom corner of content by default.
+ * To use a custom position for [badge] use [BadgedContentScope] functions.
+ * Badge anchor is a center of [badge] Composable.
+ *
+ * @param modifier The modifier to be applied to the layout.
+ * @param badge Badge Composable to be placed.
+ * @param content Content of the [BadgedContent]
+ */
 @Composable
 fun BadgedContent(
     modifier: Modifier = Modifier,
     badge: @Composable (() -> Unit)? = null,
-    content: @Composable () -> Unit
+    content: @Composable BadgedContentScope.() -> Unit
 ) {
+    // NOTE(): to think about remembering by badge position
+    val measurePolicy = remember { BadgedContentMeasurePolicy() }
     Layout(
         content = {
-            content()
+            BadgedContentScopeInstance.content()
             badge?.invoke()
         },
-        modifier = modifier.wrapContentSize(),
-        measurePolicy = remember {
-            BadgedContentMeasurePolicy()
-        }
+        measurePolicy = measurePolicy,
+        modifier = modifier,
     )
 }
 
+/**
+ * A [BadgedContentScope] provides a scope for a content of [BadgedContent]
+ */
+@LayoutScopeMarker
+@Immutable
+interface BadgedContentScope {
+
+    /**
+     * Clip content with a [shape], then add an anchor for a badge to a certain position [anchorType]
+     * anchor will be placed to the border of a shape.
+     */
+    fun Modifier.clipWithAnchor(shape: Shape, anchorType: AnchorPosition): Modifier
+}
+
+// TODO(): add more positions
+// TODO(): support RTL
+/**
+ * Determines Anchor position.
+ */
 enum class AnchorPosition {
     BOTTOM_END,
     TOP_START,
     ;
 }
 
-fun Modifier.clipWithAnchor(shape: Shape, anchorType: AnchorPosition) = clip(shape)
-    .layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val alignmentMap = when (shape) {
-            is RoundedCornerShape -> {
-                calculateRoundedCornerAlignment(
-                    anchorType,
-                    shape,
-                    placeable.width,
-                    placeable.height
-                )
+internal object BadgedContentScopeInstance : BadgedContentScope {
+
+    private val sin45 = sin(Math.PI / 4)
+
+    @Stable
+    override fun Modifier.clipWithAnchor(shape: Shape, anchorType: AnchorPosition) = clip(shape)
+        .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            val alignmentMap = when (shape) {
+                is RoundedCornerShape -> {
+                    calculateRoundedCornerAlignment(
+                        anchorType,
+                        shape,
+                        placeable.width,
+                        placeable.height
+                    )
+                }
+                // TODO(): add more shapes
+                else -> mapOf()
             }
-            // TODO(): add more shapes
-            else -> mapOf()
+            layout(placeable.width, placeable.height, alignmentMap) {
+                placeable.place(0, 0)
+            }
         }
-        layout(placeable.width, placeable.height, alignmentMap) {
-            placeable.place(0, 0)
+
+    private fun MeasureScope.calculateRoundedCornerAlignment(
+        anchorType: AnchorPosition,
+        shape: RoundedCornerShape,
+        width: Int,
+        height: Int
+    ): Map<AlignmentLine, Int> {
+        val widthAlignment: Int
+        val heightAlignment: Int
+        when (anchorType) {
+            AnchorPosition.BOTTOM_END -> {
+                val roundCornerDiff = shape.bottomEnd.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) * (1 - sin45)
+                widthAlignment = width - roundCornerDiff.roundToInt()
+                heightAlignment = height - roundCornerDiff.roundToInt()
+            }
+
+            AnchorPosition.TOP_START -> {
+                val roundCornerDiff = shape.topStart.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) * (1 - sin45)
+                widthAlignment = roundCornerDiff.roundToInt()
+                heightAlignment = roundCornerDiff.roundToInt()
+            }
         }
+        return mapOf(
+            ContentAnchorX to widthAlignment,
+            ContentAnchorY to heightAlignment
+        )
     }
-
-private val sin45 = sin(Math.PI / 4)
-
-private fun MeasureScope.calculateRoundedCornerAlignment(
-    anchorType: AnchorPosition,
-    shape: RoundedCornerShape,
-    width: Int,
-    height: Int
-): Map<AlignmentLine, Int> {
-    val widthAlignment: Int
-    val heightAlignment: Int
-    when (anchorType) {
-        AnchorPosition.BOTTOM_END -> {
-            val roundCornerDiff = shape.bottomEnd.toPx(
-                Size(width.toFloat(), height.toFloat()),
-                this
-            ) * (1 - sin45)
-            widthAlignment = width - roundCornerDiff.roundToInt()
-            heightAlignment = height - roundCornerDiff.roundToInt()
-        }
-
-        AnchorPosition.TOP_START -> {
-            val roundCornerDiff = shape.topStart.toPx(
-                Size(width.toFloat(), height.toFloat()),
-                this
-            ) * (1 - sin45)
-            widthAlignment = roundCornerDiff.roundToInt()
-            heightAlignment = roundCornerDiff.roundToInt()
-        }
-    }
-    return mapOf(
-        ContentAnchorX to widthAlignment,
-        ContentAnchorY to heightAlignment
-    )
 }
 
 private class BadgedContentMeasurePolicy : MeasurePolicy {
@@ -246,9 +282,11 @@ private fun BadgedContentWithCircleTopStartPreview() {
 private fun CardPreview() {
     MaterialTheme {
         Card {
-            Row(modifier = Modifier
-                .wrapContentSize()
-                .padding(4.dp)) {
+            Row(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(4.dp)
+            ) {
                 BadgedContent(
                     badge = {
                         Image(
