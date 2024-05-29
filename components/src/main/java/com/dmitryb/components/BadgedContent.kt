@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.AbsoluteCutCornerShape
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -100,15 +104,25 @@ internal object BadgedContentScopeInstance : BadgedContentScope {
         .layout { measurable, constraints ->
             val placeable = measurable.measure(constraints)
             val alignmentMap = when (shape) {
+                is AbsoluteRoundedCornerShape,
                 is RoundedCornerShape -> {
                     calculateRoundedCornerAlignment(
                         anchorType,
-                        shape,
+                        shape as CornerBasedShape,
                         placeable.width,
                         placeable.height
                     )
                 }
-                // TODO(): add more shapes
+                is AbsoluteCutCornerShape,
+                is CutCornerShape -> {
+                    calculateCutCornerAlignment(
+                        anchorType,
+                        shape as CornerBasedShape,
+                        placeable.width,
+                        placeable.height
+                    )
+                }
+                // TODO(): Think about Generic shape. Maybe place badge by specific coords?
                 else -> mapOf()
             }
             layout(placeable.width, placeable.height, alignmentMap) {
@@ -118,7 +132,7 @@ internal object BadgedContentScopeInstance : BadgedContentScope {
 
     private fun MeasureScope.calculateRoundedCornerAlignment(
         anchorType: AnchorPosition,
-        shape: RoundedCornerShape,
+        shape: CornerBasedShape,
         width: Int,
         height: Int
     ): Map<AlignmentLine, Int> {
@@ -139,6 +153,39 @@ internal object BadgedContentScopeInstance : BadgedContentScope {
                     Size(width.toFloat(), height.toFloat()),
                     this
                 ) * (1 - sin45)
+                widthAlignment = roundCornerDiff.roundToInt()
+                heightAlignment = roundCornerDiff.roundToInt()
+            }
+        }
+        return mapOf(
+            ContentAnchorX to widthAlignment,
+            ContentAnchorY to heightAlignment
+        )
+    }
+
+    private fun MeasureScope.calculateCutCornerAlignment(
+        anchorType: AnchorPosition,
+        shape: CornerBasedShape,
+        width: Int,
+        height: Int
+    ): Map<AlignmentLine, Int> {
+        val widthAlignment: Int
+        val heightAlignment: Int
+        when (anchorType) {
+            AnchorPosition.BOTTOM_END -> {
+                val roundCornerDiff = shape.bottomEnd.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) / 2
+                widthAlignment = width - roundCornerDiff.roundToInt()
+                heightAlignment = height - roundCornerDiff.roundToInt()
+            }
+
+            AnchorPosition.TOP_START -> {
+                val roundCornerDiff = shape.topStart.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) / 2
                 widthAlignment = roundCornerDiff.roundToInt()
                 heightAlignment = roundCornerDiff.roundToInt()
             }
@@ -306,6 +353,54 @@ private fun CardPreview() {
                 }
                 Text(text = "Bla bla bla")
             }
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun BadgedContentCutBottomEndPreview() {
+    MaterialTheme {
+        BadgedContent(
+            badge = {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_check_circle_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(8.dp)
+                )
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clipWithAnchor(CutCornerShape(12.dp), AnchorPosition.BOTTOM_END)
+                    .background(Color.LightGray)
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun BadgedContentCutTopStartPreview() {
+    MaterialTheme {
+        BadgedContent(
+            badge = {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_check_circle_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(8.dp)
+                )
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clipWithAnchor(CutCornerShape(12.dp), AnchorPosition.TOP_START)
+                    .background(Color.LightGray)
+            )
         }
     }
 }
