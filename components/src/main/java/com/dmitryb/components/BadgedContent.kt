@@ -92,6 +92,7 @@ interface BadgedContentScope {
 enum class AnchorPosition {
     BOTTOM_END,
     TOP_START,
+    TOP_END,
     ;
 }
 
@@ -156,6 +157,15 @@ internal object BadgedContentScopeInstance : BadgedContentScope {
                 widthAlignment = roundCornerDiff.roundToInt()
                 heightAlignment = roundCornerDiff.roundToInt()
             }
+
+            AnchorPosition.TOP_END -> {
+                val roundCornerDiff = shape.topEnd.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) * (1 - sin45)
+                widthAlignment = width - roundCornerDiff.roundToInt()
+                heightAlignment = roundCornerDiff.roundToInt()
+            }
         }
         return mapOf(
             ContentAnchorX to widthAlignment,
@@ -187,6 +197,15 @@ internal object BadgedContentScopeInstance : BadgedContentScope {
                     this
                 ) / 2
                 widthAlignment = roundCornerDiff.roundToInt()
+                heightAlignment = roundCornerDiff.roundToInt()
+            }
+
+            AnchorPosition.TOP_END -> {
+                val roundCornerDiff = shape.bottomEnd.toPx(
+                    Size(width.toFloat(), height.toFloat()),
+                    this
+                ) / 2
+                widthAlignment = width - roundCornerDiff.roundToInt()
                 heightAlignment = roundCornerDiff.roundToInt()
             }
         }
@@ -277,6 +296,30 @@ private fun BadgedContentRoundedBottomEndPreview() {
 
 @Preview
 @Composable
+private fun BadgedContentRoundedTopEndPreview() {
+    MaterialTheme {
+        BadgedContent(
+            badge = {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_check_circle_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(8.dp)
+                )
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clipWithAnchor(RoundedCornerShape(12.dp), AnchorPosition.TOP_END)
+                    .background(Color.LightGray)
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
 private fun BadgedContentWithCircleBottomEndPreview() {
     MaterialTheme {
         BadgedContent(
@@ -294,6 +337,31 @@ private fun BadgedContentWithCircleBottomEndPreview() {
                 modifier = Modifier
                     .size(40.dp)
                     .clipWithAnchor(CircleShape, AnchorPosition.BOTTOM_END)
+                    .background(Color.LightGray)
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun BadgedContentWithCircleTopEndPreview() {
+    MaterialTheme {
+        BadgedContent(
+            modifier = Modifier.wrapContentSize(),
+            badge = {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_check_circle_24),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(8.dp)
+                )
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clipWithAnchor(CircleShape, AnchorPosition.TOP_END)
                     .background(Color.LightGray)
             )
         }
