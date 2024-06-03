@@ -1,5 +1,6 @@
 package com.dmitryb.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -36,7 +37,11 @@ fun ExpandableCard(
         mutableStateOf(expandedByDefault)
     }
     // NOTE(): Make Container as a parameter for better flexibility?
-    Card(modifier.fillMaxWidth()) {
+    Card(
+        modifier
+            .fillMaxWidth()
+            .animateContentSize()
+    ) {
         Row(
             Modifier.padding(8.dp)
         ) {
@@ -68,7 +73,8 @@ private fun ExpandableCardPreview() {
                 )
             },
             expandableContent = {
-                Text(text = "Some extra content, text for example. Or there could be images",
+                Text(
+                    text = "Some extra content, text for example. Or there could be images",
                     modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
                 )
             },
