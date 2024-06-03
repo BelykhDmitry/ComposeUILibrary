@@ -1,6 +1,6 @@
 package com.dmitryb.components
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -40,7 +40,6 @@ fun ExpandableCard(
     Card(
         modifier
             .fillMaxWidth()
-            .animateContentSize()
     ) {
         Row(
             Modifier.padding(8.dp)
@@ -57,7 +56,9 @@ fun ExpandableCard(
                 Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
             }
         }
-        if (expandedState) expandableContent()
+        AnimatedVisibility(visible = expandedState) {
+            expandableContent()
+        }
     }
 }
 
