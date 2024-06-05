@@ -62,6 +62,7 @@ fun BadgedContent(
     val measurePolicy = remember { BadgedContentMeasurePolicy() }
     Layout(
         content = {
+            // TODO: Add tags, use tags in MeasurePolicy
             BadgedContentScopeInstance.content()
             badge?.invoke()
         },
@@ -221,6 +222,7 @@ private class BadgedContentMeasurePolicy : MeasurePolicy {
         measurables: List<Measurable>,
         constraints: Constraints
     ): MeasureResult {
+        // TODO() Need to check calculations, could be a problem with badge sizes. Check Badge.kt
         val placeables =
             measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
         val contentPlaceable = placeables.first()
