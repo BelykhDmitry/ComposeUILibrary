@@ -43,10 +43,10 @@ private fun MasteringStateScreenContent(
         modifier = modifier,
         bottomBar = {
             BottomAppBar {
-                IconButton(onClick = { /*TODO*/ }) {
+                IconButton(onClick = { onUserAction(MasteringStateScreenAction.AccountClick) }) {
                     Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
                 }
-                IconButton(onClick = { /*TODO*/ }) {
+                IconButton(onClick = { onUserAction(MasteringStateScreenAction.CheckClick) }) {
                     Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null)
                 }
             }
